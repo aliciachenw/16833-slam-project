@@ -1,5 +1,5 @@
 data_path = "../data1-3_bagfiles/";
-bag_name = "slam_data1.bag";
+bag_name = "slam_data3.bag";
 
 %% read bag
 bag = rosbag(data_path + bag_name);
@@ -92,5 +92,91 @@ for i = 1:length(true_tf)
 end
 
 % plot(ground_truth_pose(:, 1), ground_truth_pose(:, 2));
-plot(ground_truth_pose(:, 1) - ground_truth_pose(1, 1), ground_truth_pose(:, 2) - ground_truth_pose(1, 2));
+ground_truth_pose = ground_truth_pose - [-5.04, 3.42];
+plot(ground_truth_pose(:, 1), ground_truth_pose(:, 2));
 hold on;
+
+%% calculate rmse
+
+gt_length = round(length(true_tf));
+lidar_length = round(length(all_pose));
+gt_in_rs_time = linspace(1, gt_length, lidar_length);
+gt_ld_interp_x = interp1(1:gt_length, ground_truth_pose(:, 1), gt_in_rs_time');
+gt_ld_interp_y = interp1(1:gt_length, ground_truth_pose(:, 2), gt_in_rs_time');
+figure();
+plot(all_pose(:, 1));
+hold on;
+plot(gt_ld_interp_x);
+legend('icp', 'ground truth');
+title('x axis');
+
+figure();
+plot(all_pose(:, 2));
+hold on;
+plot(gt_ld_interp_y);
+legend('icp', 'ground truth');
+title('y axis');
+
+rmse_x = sqrt(mean(all_pose(:, 1) - gt_ld_interp_x).^2);
+rmse_y = sqrt(mean(all_pose(:, 2) - gt_ld_interp_y).^2);
+fprintf('rmse x: %.6f m rmse y: %.6f m \n', rmse_x, rmse_y);
+
+%% read tf
+bagselect = select(bag, 'Topic', '/tf');
+tf = readMessages(bagselect, 'DataFormat', 'struct');
+
+%%
+lidar_length = length(all_pose);
+tf_x = [];
+tf_y = [];
+for i = 1:length(tf)
+    if length(tf{i, 1}.Transforms) == 1
+        tf_x = [tf_x, tf{i, 1}.Transforms.Transform.Translation.X];
+        tf_y = [tf_y, tf{i, 1}.Transforms.Transform.Translation.Y];
+    end
+end
+% tf_x = tf_x - 5.04;
+% tf_y = tf_y + 3.42;
+tf_length = round(length(tf_x));
+tf_in_lidar_time = linspace(1, tf_length, lidar_length);
+tf_interp_x = interp1(1:tf_length, tf_x, tf_in_lidar_time');
+tf_interp_y = interp1(1:tf_length, tf_y, tf_in_lidar_time');
+
+figure();
+plot(tf_interp_x);hold on;  
+plot(all_pose(:, 1));hold on;
+plot(gt_ld_interp_x);hold on;
+
+legend('tf', 'icp', 'ground truth');
+title('x axis');
+
+figure();
+plot(tf_interp_y);hold on;  
+plot(all_pose(:, 2));hold on;
+plot(gt_ld_interp_y);hold on;
+
+legend('tf', 'icp', 'ground truth');
+title('y axis');
+
+rmse_x = sqrt(mean(all_pose(:, 1) - gt_ld_interp_x).^2);
+rmse_y = sqrt(mean(all_pose(:, 2) - gt_ld_interp_y).^2);
+fprintf('ICP rmse x: %.6f m rmse y: %.6f m \n', rmse_x, rmse_y);
+
+rmse_x = sqrt(mean(tf_interp_x - gt_ld_interp_x).^2);
+rmse_y = sqrt(mean(tf_interp_y - gt_ld_interp_y).^2);
+fprintf('tf rmse x: %.6f m rmse y: %.6f m \n', rmse_x, rmse_y);
+%%
+hdl_x = tf_x;
+hdl_y = tf_y;
+hdl_interp_x = tf_interp_x;
+hdl_interp_y = tf_interp_y;
+
+gt_x = ground_truth_pose(:, 1);
+gt_y = ground_truth_pose(:, 2);
+gt_interp_x = gt_ld_interp_x;
+gt_interp_y = gt_ld_interp_y;
+
+icp_x = all_pose(:, 1);
+icp_y = all_pose(:, 2);
+
+save bag3.mat hdl_x hdl_y hdl_interp_x hdl_interp_y gt_x gt_y gt_interp_x gt_interp_y icp_x icp_y
