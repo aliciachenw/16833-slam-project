@@ -1,2 +1,4 @@
 *.asv 
 figures/*
+*.png
+*.pdf
