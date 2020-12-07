@@ -1,5 +1,5 @@
 data_path = "../data1-3_bagfiles/";
-bag_name = "slam_data3.bag";
+bag_name = "slam_data2.bag";
 
 %% read bag
 bag = rosbag(data_path + bag_name);
@@ -79,11 +79,11 @@ for i = 1:length(all_tf)
     all_pose(i, 2) = p(4, 2);
 end
 %% visualize groundtruth_map
-pcshow(groundtruth_map)
+% pcshow(groundtruth_map)
+% hold on;
+plot(all_pose(:, 1), all_pose(:, 2), 'LineWidth', 1);
 hold on;
-plot(all_pose(:, 1), all_pose(:, 2));
-hold on;
-%%
+%% plot groundtruth traj
 ground_truth_pose = zeros(length(true_tf), 2);
 for i = 1:length(true_tf)
     temp = true_tf{i, 1};
@@ -96,6 +96,9 @@ ground_truth_pose = ground_truth_pose - [-5.04, 3.42];
 plot(ground_truth_pose(:, 1), ground_truth_pose(:, 2));
 hold on;
 
+%% plot dhl
+plot(hdl_interp_x, hdl_interp_y, 'LineWidth', 1);
+
 %% calculate rmse
 
 gt_length = round(length(true_tf));
@@ -103,23 +106,7 @@ lidar_length = round(length(all_pose));
 gt_in_rs_time = linspace(1, gt_length, lidar_length);
 gt_ld_interp_x = interp1(1:gt_length, ground_truth_pose(:, 1), gt_in_rs_time');
 gt_ld_interp_y = interp1(1:gt_length, ground_truth_pose(:, 2), gt_in_rs_time');
-figure();
-plot(all_pose(:, 1));
-hold on;
-plot(gt_ld_interp_x);
-legend('icp', 'ground truth');
-title('x axis');
 
-figure();
-plot(all_pose(:, 2));
-hold on;
-plot(gt_ld_interp_y);
-legend('icp', 'ground truth');
-title('y axis');
-
-rmse_x = sqrt(mean(all_pose(:, 1) - gt_ld_interp_x).^2);
-rmse_y = sqrt(mean(all_pose(:, 2) - gt_ld_interp_y).^2);
-fprintf('rmse x: %.6f m rmse y: %.6f m \n', rmse_x, rmse_y);
 
 %% read tf
 bagselect = select(bag, 'Topic', '/tf');
@@ -137,23 +124,25 @@ for i = 1:length(tf)
 end
 % tf_x = tf_x - 5.04;
 % tf_y = tf_y + 3.42;
+
+%% plot image
 tf_length = round(length(tf_x));
 tf_in_lidar_time = linspace(1, tf_length, lidar_length);
 tf_interp_x = interp1(1:tf_length, tf_x, tf_in_lidar_time');
 tf_interp_y = interp1(1:tf_length, tf_y, tf_in_lidar_time');
 
 figure();
-plot(tf_interp_x);hold on;  
-plot(all_pose(:, 1));hold on;
-plot(gt_ld_interp_x);hold on;
+plot(tf_interp_x, 'LineWidth', 3);hold on;  
+plot(all_pose(:, 1), 'LineWidth', 3);hold on;
+plot(gt_ld_interp_x, 'LineWidth', 3);hold on;
 
 legend('tf', 'icp', 'ground truth');
 title('x axis');
 
 figure();
-plot(tf_interp_y);hold on;  
-plot(all_pose(:, 2));hold on;
-plot(gt_ld_interp_y);hold on;
+plot(tf_interp_y, 'LineWidth', 3);hold on;  
+plot(all_pose(:, 2), 'LineWidth', 3);hold on;
+plot(gt_ld_interp_y, 'LineWidth', 3);hold on;
 
 legend('tf', 'icp', 'ground truth');
 title('y axis');
@@ -166,17 +155,17 @@ rmse_x = sqrt(mean(tf_interp_x - gt_ld_interp_x).^2);
 rmse_y = sqrt(mean(tf_interp_y - gt_ld_interp_y).^2);
 fprintf('tf rmse x: %.6f m rmse y: %.6f m \n', rmse_x, rmse_y);
 %%
-hdl_x = tf_x;
-hdl_y = tf_y;
-hdl_interp_x = tf_interp_x;
-hdl_interp_y = tf_interp_y;
-
-gt_x = ground_truth_pose(:, 1);
-gt_y = ground_truth_pose(:, 2);
-gt_interp_x = gt_ld_interp_x;
-gt_interp_y = gt_ld_interp_y;
-
-icp_x = all_pose(:, 1);
-icp_y = all_pose(:, 2);
-
-save bag3.mat hdl_x hdl_y hdl_interp_x hdl_interp_y gt_x gt_y gt_interp_x gt_interp_y icp_x icp_y
+% hdl_x = tf_x;
+% hdl_y = tf_y;
+% hdl_interp_x = tf_interp_x;
+% hdl_interp_y = tf_interp_y;
+% 
+% gt_x = ground_truth_pose(:, 1);
+% gt_y = ground_truth_pose(:, 2);
+% gt_interp_x = gt_ld_interp_x;
+% gt_interp_y = gt_ld_interp_y;
+% 
+% icp_x = all_pose(:, 1);
+% icp_y = all_pose(:, 2);
+% 
+% save bag3.mat hdl_x hdl_y hdl_interp_x hdl_interp_y gt_x gt_y gt_interp_x gt_interp_y icp_x icp_y
